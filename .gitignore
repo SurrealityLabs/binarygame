@@ -4,3 +4,12 @@ $savepcb.*
 *.b#*
 *.l#*
 eagle.epf
+*.o
+*.lst
+*.elf
+*.map
+*.sym
+*.lss
+*.lst
+*.s
+*.d
