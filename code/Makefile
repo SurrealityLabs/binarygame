@@ -1,6 +1,6 @@
 # Name: Makefile
 # Author: Randy Glenn <randy@surrealitylabs.com
-# Copyright: 2013. All rights reserved.
+# Copyright: 2018. All rights reserved.
 # License: GPL 3.0
 
 # This is a prototype Makefile. Modify it according to your needs.
@@ -17,7 +17,7 @@
 DEVICE     = attiny4313
 CLOCK      = 8000000
 PROGRAMMER = -c avrisp2
-OBJECTS    = main.o ui.o demo.o game.o
+OBJECTS    = main.o ui.o demo.o game.o highscore.o
 FUSES	   = -U lfuse:w:0xe4:m -U hfuse:w:0xdf:m -U efuse:w:0x01:m
 
 AVRDUDE = avrdude $(PROGRAMMER) -p $(DEVICE) -B 10 -F

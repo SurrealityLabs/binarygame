@@ -5,6 +5,7 @@
 #include "ui.h"
 #include "demo.h"
 #include "game.h"
+#include "highscore.h"
 
 typedef enum binaryGameState {
 	STATE_DEMO,
@@ -23,6 +24,7 @@ int main(void) {
 
 	ui_init();
 	init_timer();
+	init_highscore();
 
 	sei();
 
