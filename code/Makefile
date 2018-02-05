@@ -25,7 +25,7 @@ AVRDUDE = avrdude $(PROGRAMMER) -p $(DEVICE) -B 10 -F
 COMPILE = avr-gcc -Wall -Os -DF_CPU=$(CLOCK) -mmcu=$(DEVICE)
 
 # symbolic targets:
-all:	main.hex	size
+all:	binarygame.hex	size
 
 main.o:
 
@@ -42,26 +42,26 @@ main.o:
 .c.s:
 	$(COMPILE) -S $< -o $@
 
-flash:	main.hex  size
-	$(AVRDUDE) -U flash:w:main.hex:i
+flash:	binarygame.hex  size
+	$(AVRDUDE) -U flash:w:binarygame.hex:i
 
 fuse:
 	$(AVRDUDE) $(FUSES)
 
-size:	main.elf
-	avr-size --mcu=$(DEVICE) --format=avr main.elf
+size:	binarygame.elf
+	avr-size --mcu=$(DEVICE) --format=avr binarygame.elf
 
 ident:
 	$(AVRDUDE)
 
 clean:
 	rm -f $(OBJECTS)
-	rm -f main.hex main.elf main.map
+	rm -f binarygame.hex binarygame.elf binarygame.map
 
 # file targets:
-main.elf: $(OBJECTS)
-	$(COMPILE) -o main.elf -Wl,-Map,main.map $(OBJECTS)
+binarygame.elf: $(OBJECTS)
+	$(COMPILE) -o binarygame.elf -Wl,-Map,binary.map $(OBJECTS)
 
-main.hex: main.elf
-	rm -f main.hex
-	avr-objcopy -j .text -j .data -O ihex main.elf main.hex
+binarygame.hex: binarygame.elf
+	rm -f binarygame.hex
+	avr-objcopy -j .text -j .data -O ihex binarygame.elf binarygame.hex
