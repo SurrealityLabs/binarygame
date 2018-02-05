@@ -60,7 +60,7 @@ clean:
 
 # file targets:
 binarygame.elf: $(OBJECTS)
-	$(COMPILE) -o binarygame.elf -Wl,-Map,binary.map $(OBJECTS)
+	$(COMPILE) -o binarygame.elf -Wl,-Map,binarygame.map $(OBJECTS)
 
 binarygame.hex: binarygame.elf
 	rm -f binarygame.hex
