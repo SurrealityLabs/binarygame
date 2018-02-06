@@ -2,6 +2,7 @@
 #include "game.h"
 #include <stdlib.h>
 #include <stdint.h>
+#include "highscore.h"
 
 const __flash uint8_t yesString[]   = {0x00, 0x37, 0xF2, 0x76};
 const __flash uint8_t noString[]    = {0x00, 0x86, 0xA6, 0x00};
@@ -20,6 +21,7 @@ typedef enum gameBinaryState {
 	GAME_CORRECT,
 	GAME_INCORRECT,
 	GAME_TIME_UP,
+	GAME_OVER_START,
 	GAME_OVER,
 	GAME_SHOW_SCORE
 } gameBinaryState_t;
@@ -35,6 +37,7 @@ static uint8_t numWins;
 static uint16_t lastRoundTimeRemaining;
 static uint16_t timerStart;
 static uint8_t playerScore;
+static uint8_t highScore;
 
 extern uint16_t get_timer(void);
 
@@ -60,9 +63,11 @@ static void lightup_base(void) {
 
 void game_start(void) {
 	state = GAME_IDLE;
+	timerStart = get_timer();
 	modeButtonArmed = 0;
 	goButtonArmed = 0;
 	base = 8;
+	highScore = get_highscore(base);
 	lightup_base();
 	ui_setGameLED(1);
 }
@@ -77,6 +82,7 @@ static uint8_t game_next(void) {
 		return 1;
 	}
 
+	highScore = get_highscore(base);
 	modeButtonArmed = 0;
 	goButtonArmed = 0;
 	lightup_base();
@@ -93,7 +99,14 @@ uint8_t game_update(void) {
 	switch(state) {
 		case GAME_IDLE:
 			// TODO: Display old high score, with h prefix
-			ui_setDisplayRaw(goString);
+			if(get_timer() - timerStart < 2000) {
+				ui_setDisplayRaw(goString);
+			} else if(get_timer() - timerStart < 4000) {
+				ui_setDisplayDigits(highScore, 10);
+			} else {
+				timerStart = get_timer();
+			}
+
 			if(ui_readModeButton()) {
 				modeButtonArmed = 1;
 			} else if(modeButtonArmed && !ui_readModeButton()) {
@@ -105,6 +118,7 @@ uint8_t game_update(void) {
 					state = GAME_IDLE;
 				}
 			}
+
 			if(ui_readGoButton()) {
 				goButtonArmed = 1;
 			} else if(goButtonArmed && !ui_readGoButton()) {
@@ -116,6 +130,7 @@ uint8_t game_update(void) {
 
 				state = GAME_ROUND_START;
 			}
+
 			break;
 		case GAME_ROUND_START:
 			numberToGuess = rand() & 0xFF;
@@ -157,7 +172,7 @@ uint8_t game_update(void) {
 				numWins++;
 				if(numWins >= MAX_WINS) {
 					timerStart = get_timer();
-					state = GAME_OVER;
+					state = GAME_OVER_START;
 				} else {
 					state = GAME_ROUND_START;
 				}
@@ -169,7 +184,7 @@ uint8_t game_update(void) {
 				numFailures++;
 				if(numFailures >= MAX_FAILURES) {
 					timerStart = get_timer();
-					state = GAME_OVER;
+					state = GAME_OVER_START;
 				} else {
 					state = GAME_ROUND_START;
 				}
@@ -181,14 +196,20 @@ uint8_t game_update(void) {
 				numFailures++;
 				if(numFailures >= MAX_FAILURES) {
 					timerStart = get_timer();
-					state = GAME_OVER;
+					state = GAME_OVER_START;
 				} else {
 					state = GAME_ROUND_START;
 				}
 			}
 			break;
-		case GAME_OVER:
+		case GAME_OVER_START:
 			// TODO: Save new high score
+			if(playerScore > highScore) {
+				set_highscore(playerScore, base);
+			}
+			state = GAME_OVER;
+			break;
+		case GAME_OVER:
 			if(get_timer() - timerStart < 1000) {
 				ui_setDisplayRaw(gameString);
 			} else if(get_timer() - timerStart < 2000) {
@@ -207,6 +228,7 @@ uint8_t game_update(void) {
 			} else if(modeButtonArmed && !ui_readModeButton()) {
 				modeButtonArmed = 0;
 				// next mode
+				timerStart = get_timer();
 				state = GAME_IDLE;
 			}
 
@@ -215,6 +237,7 @@ uint8_t game_update(void) {
 			} else if(goButtonArmed && !ui_readGoButton()) {
 				goButtonArmed = 0;
 				// next mode
+				timerStart = get_timer();
 				state = GAME_IDLE;
 			}
 			break;
