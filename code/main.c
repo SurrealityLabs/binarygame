@@ -6,6 +6,7 @@
 #include "demo.h"
 #include "game.h"
 #include "highscore.h"
+#include "tone.h"
 
 typedef enum binaryGameState {
 	STATE_DEMO,
@@ -51,6 +52,7 @@ int main(void) {
 				demo_start();
 				break;
 		}
+		tone_loop();
 	}
 
 	return 0;

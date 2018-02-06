@@ -17,7 +17,7 @@
 DEVICE     = attiny4313
 CLOCK      = 8000000
 PROGRAMMER = -c avrisp2
-OBJECTS    = main.o ui.o demo.o game.o highscore.o
+OBJECTS    = main.o ui.o demo.o game.o highscore.o tone.o
 FUSES	   = -U lfuse:w:0xe4:m -U hfuse:w:0xdf:m -U efuse:w:0x01:m
 
 AVRDUDE = avrdude $(PROGRAMMER) -p $(DEVICE) -B 10 -F

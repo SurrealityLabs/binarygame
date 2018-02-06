@@ -34,7 +34,6 @@ static uint8_t goButtonArmed = 0;
 static uint8_t numberToGuess;
 static uint8_t numFailures;
 static uint8_t numWins;
-static uint16_t lastRoundTimeRemaining;
 static uint16_t timerStart;
 static uint8_t playerScore;
 static uint8_t highScore;
@@ -145,7 +144,6 @@ uint8_t game_update(void) {
 				goButtonArmed = 1;
 			} else if(goButtonArmed && !ui_readModeButton()) {
 				if(input == numberToGuess) {
-					lastRoundTimeRemaining = get_timer() - timerStart;
 					timerStart = get_timer();
 					state = GAME_CORRECT;
 				} else {
@@ -168,13 +166,14 @@ uint8_t game_update(void) {
 		case GAME_CORRECT:
 			ui_setDisplayRaw(yesString);
 			if(get_timer() - timerStart > 2000) {
-				playerScore += (lastRoundTimeRemaining / 1000);
+				playerScore += 1;
 				numWins++;
 				if(numWins >= MAX_WINS) {
 					timerStart = get_timer();
 					state = GAME_OVER_START;
 				} else {
 					state = GAME_ROUND_START;
+					// TODO show increment score
 				}
 			}
 			break;
@@ -187,6 +186,7 @@ uint8_t game_update(void) {
 					state = GAME_OVER_START;
 				} else {
 					state = GAME_ROUND_START;
+					// TODO show score
 				}
 			}
 			break;
@@ -199,11 +199,12 @@ uint8_t game_update(void) {
 					state = GAME_OVER_START;
 				} else {
 					state = GAME_ROUND_START;
+					// TODO show score
 				}
 			}
 			break;
 		case GAME_OVER_START:
-			// TODO: Save new high score
+			// Save new high score
 			if(playerScore > highScore) {
 				set_highscore(playerScore, base);
 			}
