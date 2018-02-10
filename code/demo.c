@@ -52,9 +52,11 @@ uint8_t demo_update(void) {
 			ui_setOctLED(0);
 			ui_setDecLED(0);
 			ui_setHexLED(1);
+			ui_setDisplayDigits(input, 16);
 			if(ui_readModeButton()) {
 				buttonArmed = 1;
 			} else if(buttonArmed && !ui_readModeButton()) {
+				buttonArmed = 0;
 				return 1;
 			}
 			break;

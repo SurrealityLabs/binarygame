@@ -126,6 +126,7 @@ uint8_t game_update(void) {
 				srand(get_timer());
 				numFailures = 0;
 				numWins = 0;
+				playerScore = 0;
 
 				state = GAME_ROUND_START;
 			}
@@ -142,7 +143,7 @@ uint8_t game_update(void) {
 			// press GO button
 			if(ui_readGoButton()) {
 				goButtonArmed = 1;
-			} else if(goButtonArmed && !ui_readModeButton()) {
+			} else if(goButtonArmed && !ui_readGoButton()) {
 				if(input == numberToGuess) {
 					timerStart = get_timer();
 					state = GAME_CORRECT;
@@ -155,7 +156,7 @@ uint8_t game_update(void) {
 			}
 
 			// time up
-			if(get_timer() - timerStart > 10000) {
+			if(get_timer() - timerStart > 20000) {
 				timerStart = get_timer();
 				state = GAME_TIME_UP;
 				break;

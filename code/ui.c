@@ -1,4 +1,5 @@
 #include <avr/io.h>
+#include <avr/interrupt.h>
 #include <stdint.h>
 
 typedef enum uiBinaryState {
@@ -35,7 +36,7 @@ void ui_init(void) {
 	PORTD |= 0b00000100;	// Pullup on PD2
 	DDRA |= 0x01;
 	PORTA &= ~0x01;
-	PORTA |= 0x20;			// Pullup on PA1
+	PORTA |= 0x02;			// Pullup on PA1
 
 	// Initialize variables
 	state = UI_STATE_DIGIT_0;
@@ -98,46 +99,54 @@ void ui_setHexLED(uint8_t val) {
 
 void ui_setDisplayDigits(uint8_t val, uint8_t base) {
 	uint8_t tmp;
+	uint8_t tmpBuffer[4];
 
 	if(base == 10) {
-		displayBuffer[3] = 0;
-		displayBuffer[2] = 0;
-		displayBuffer[1] = 0;
-		displayBuffer[0] = 0;
+		tmpBuffer[3] = 0;
+		tmpBuffer[2] = 0;
+		tmpBuffer[1] = 0;
+		tmpBuffer[0] = 0;
 		uint8_t i = 3;
 
 		do {
 			tmp = val % 10;
-			displayBuffer[i--] = displayLookup[tmp];
+			tmpBuffer[i--] = displayLookup[tmp];
 			val -= tmp;
 			val /= 10;
 		} while(val);
 	} else if(base == 8) {
 		// first digit
 		tmp = val & 0x07;
-		displayBuffer[3] = displayLookup[tmp];
+		tmpBuffer[3] = displayLookup[tmp];
 		// second digit
 		tmp = (val & 0x38) >> 3;
-		displayBuffer[2] = displayLookup[tmp];
+		tmpBuffer[2] = displayLookup[tmp];
 		// third digit
 		tmp = (val & 0xC0) >> 6;
-		displayBuffer[1] = displayLookup[tmp];
+		tmpBuffer[1] = displayLookup[tmp];
 		// prefix 0
-		displayBuffer[0] = displayLookup[0];
+		tmpBuffer[0] = displayLookup[0];
 	} else if(base == 16) {
 		// first digit
 		tmp = val & 0x0F;
-		displayBuffer[3] = displayLookup[tmp];
+		tmpBuffer[3] = displayLookup[tmp];
 		// second digit
 		tmp = (val & 0xF0) >> 4;
-		displayBuffer[2] = displayLookup[tmp];
+		tmpBuffer[2] = displayLookup[tmp];
 		// prefix 0x
-		displayBuffer[1] = 0x97;
-		displayBuffer[0] = displayLookup[0];
+		tmpBuffer[1] = 0x97;
+		tmpBuffer[0] = displayLookup[0];
 	} else {
 		// those are the only supported bases
 		return;
 	}
+
+	cli();
+	displayBuffer[0] = tmpBuffer[0];
+	displayBuffer[1] = tmpBuffer[1];
+	displayBuffer[2] = tmpBuffer[2];
+	displayBuffer[3] = tmpBuffer[3];
+	sei();
 }
 
 void ui_setDisplayRaw(const __flash uint8_t* val) {
@@ -193,7 +202,7 @@ void ui_matchISR2(void) {
 			PORTA &= 0b11111110;
 			break;
 		case UI_STATE_BINARY_SWITCHES:
-			binarySwitchBuffer = PINB;
+			binarySwitchBuffer = ~PINB;
 			break;
 	}
 }
@@ -220,7 +229,7 @@ void ui_overflowISR(void) {
 			break;
 		case UI_STATE_BINARY_SWITCHES:
 			PORTB = 0x00;
-			PINB = 0xFF;
+			DDRB = 0xFF;
 			state = UI_STATE_DIGIT_0;
 			break;
 	}
@@ -228,7 +237,7 @@ void ui_overflowISR(void) {
 	if(modeButtonDebounce > 0) {
 		modeButtonDebounce--;
 	} else {
-		if(PORTA & 0x02) {
+		if(PINA & 0x02) {
 			// PA1 is high (not pressed)
 			if(modeButtonState) {
 				modeButtonState = 0;
@@ -246,7 +255,7 @@ void ui_overflowISR(void) {
 	if(goButtonDebounce > 0) {
 		goButtonDebounce--;
 	} else {
-		if(PORTD & 0x03) {
+		if(PIND & 0x04) {
 			// PD2 is high (not pressed)
 			if(goButtonState) {
 				goButtonState = 0;

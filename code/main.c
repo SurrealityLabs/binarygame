@@ -69,10 +69,10 @@ void init_timer(void) {
 	ICR1 = 8000;
 	OCR1A = 1000;
 	OCR1B = 7000;
-	TIMSK |= (1 << TOIE1) | (1 << OCIE1A) | (1 << OCIE1B);
+	TIMSK |= (1 << ICIE1) | (1 << OCIE1A) | (1 << OCIE1B);
 }
 
-ISR(TIMER1_OVF_vect) {
+ISR(TIMER1_CAPT_vect) {
 	msec_timer++;
 	ui_overflowISR();
 }
