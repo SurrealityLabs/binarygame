@@ -15,7 +15,7 @@
 #define NOTE_B      127
 
 void tone_init(void);
-void tone_start(uint8_t tone, uint8_t octave, uint8_t duration);
+void tone_start(uint8_t tone, uint8_t octave, uint16_t duration);
 void tone_loop(void);
 void tone_stop(void);
 uint8_t tone_playing(void);

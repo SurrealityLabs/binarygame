@@ -31,7 +31,7 @@ void ui_init(void) {
 	// Initialize I/O
 	DDRB = 0xFF;			// PORTB output
 	PORTB = 0x00;			// PORTB low
-	DDRD |= 0b01011011;
+	DDRD |= 0b01111011;
 	PORTD &= ~0b01011011;
 	PORTD |= 0b00000100;	// Pullup on PD2
 	DDRA |= 0x01;
@@ -97,7 +97,7 @@ void ui_setHexLED(uint8_t val) {
 	}
 }
 
-void ui_setDisplayDigits(uint8_t val, uint8_t base) {
+void ui_setDisplayDigits(uint8_t val, uint8_t base, uint8_t prefix) {
 	uint8_t tmp;
 	uint8_t tmpBuffer[4];
 
@@ -105,7 +105,7 @@ void ui_setDisplayDigits(uint8_t val, uint8_t base) {
 		tmpBuffer[3] = 0;
 		tmpBuffer[2] = 0;
 		tmpBuffer[1] = 0;
-		tmpBuffer[0] = 0;
+		tmpBuffer[0] = prefix;
 		uint8_t i = 3;
 
 		do {

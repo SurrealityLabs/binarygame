@@ -10,7 +10,7 @@ void ui_setGameLED(uint8_t val);
 void ui_setOctLED(uint8_t val);
 void ui_setDecLED(uint8_t val);
 void ui_setHexLED(uint8_t val);
-void ui_setDisplayDigits(uint8_t val, uint8_t base);
+void ui_setDisplayDigits(uint8_t val, uint8_t base, uint8_t prefix);
 void ui_setDisplayRaw(const __flash uint8_t* val);
 void ui_matchISR1(void);
 void ui_matchISR2(void);

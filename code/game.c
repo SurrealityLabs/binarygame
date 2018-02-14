@@ -3,6 +3,8 @@
 #include <stdlib.h>
 #include <stdint.h>
 #include "highscore.h"
+#include "tone.h"
+#include <avr/interrupt.h>
 
 const __flash uint8_t yesString[]   = {0x00, 0x37, 0xF2, 0x76};
 const __flash uint8_t noString[]    = {0x00, 0x86, 0xA6, 0x00};
@@ -19,7 +21,10 @@ typedef enum gameBinaryState {
 	GAME_ROUND_START,
 	GAME_ROUND,
 	GAME_CORRECT,
+	GAME_CORRECT_2,
+	GAME_CORRECT_3,
 	GAME_INCORRECT,
+	GAME_INCORRECT_2,
 	GAME_TIME_UP,
 	GAME_OVER_START,
 	GAME_OVER,
@@ -33,7 +38,6 @@ static uint8_t goButtonArmed = 0;
 
 static uint8_t numberToGuess;
 static uint8_t numFailures;
-static uint8_t numWins;
 static uint16_t timerStart;
 static uint8_t playerScore;
 static uint8_t highScore;
@@ -86,6 +90,7 @@ static uint8_t game_next(void) {
 	goButtonArmed = 0;
 	lightup_base();
 	ui_setGameLED(1);
+	tone_start(NOTE_C, 4, 250);
 	return 0;
 }
 
@@ -101,7 +106,7 @@ uint8_t game_update(void) {
 			if(get_timer() - timerStart < 2000) {
 				ui_setDisplayRaw(goString);
 			} else if(get_timer() - timerStart < 4000) {
-				ui_setDisplayDigits(highScore, 10);
+				ui_setDisplayDigits(highScore, 10, 0x96);
 			} else {
 				timerStart = get_timer();
 			}
@@ -115,6 +120,7 @@ uint8_t game_update(void) {
 					return 1;
 				} else {
 					state = GAME_IDLE;
+					timerStart = get_timer();
 				}
 			}
 
@@ -125,7 +131,6 @@ uint8_t game_update(void) {
 				
 				srand(get_timer());
 				numFailures = 0;
-				numWins = 0;
 				playerScore = 0;
 
 				state = GAME_ROUND_START;
@@ -138,7 +143,7 @@ uint8_t game_update(void) {
 			state = GAME_ROUND;
 			break;
 		case GAME_ROUND:
-			ui_setDisplayDigits(numberToGuess, base);
+			ui_setDisplayDigits(numberToGuess, base, 0x00);
 
 			// press GO button
 			if(ui_readGoButton()) {
@@ -148,6 +153,7 @@ uint8_t game_update(void) {
 					timerStart = get_timer();
 					state = GAME_CORRECT;
 				} else {
+					tone_start(NOTE_C, 2, 1250);
 					timerStart = get_timer();
 					state = GAME_INCORRECT;
 				}
@@ -155,9 +161,14 @@ uint8_t game_update(void) {
 				break;
 			}
 
+			if(((get_timer() - timerStart) & 0xFC00) == 0) {
+				tone_start(NOTE_F, 2, 150);
+			}
+
 			// time up
 			if(get_timer() - timerStart > 20000) {
 				timerStart = get_timer();
+				tone_start(NOTE_C, 2, 1250);
 				state = GAME_TIME_UP;
 				break;
 			}
@@ -166,52 +177,85 @@ uint8_t game_update(void) {
 			break;
 		case GAME_CORRECT:
 			ui_setDisplayRaw(yesString);
+			if((get_timer() - timerStart) == 0) {
+				tone_start(NOTE_C, 3, 400);
+			} else if((get_timer() - timerStart) == 500) {
+				tone_start(NOTE_D, 3, 400);
+			} else if((get_timer() - timerStart) == 1000) {
+				tone_start(NOTE_E, 3, 400);
+			} else if((get_timer() - timerStart) == 1500) {
+				tone_start(NOTE_F, 3, 400);
+			}
 			if(get_timer() - timerStart > 2000) {
+				timerStart = get_timer();
+				state = GAME_CORRECT_2;
+			}
+			break;
+		case GAME_CORRECT_2:
+			ui_setDisplayDigits(playerScore, 10, 0x00);
+			if(get_timer() - timerStart > 1000) {
 				playerScore += 1;
-				numWins++;
-				if(numWins >= MAX_WINS) {
+				timerStart = get_timer();
+				state = GAME_CORRECT_3;
+				tone_start(NOTE_F, 3, 250);
+			}
+			break;
+		case GAME_CORRECT_3:
+			ui_setDisplayDigits(playerScore, 10, 0x00);
+			if(get_timer() - timerStart > 1000) {
+				if(playerScore >= MAX_WINS) {
 					timerStart = get_timer();
 					state = GAME_OVER_START;
 				} else {
 					state = GAME_ROUND_START;
-					// TODO show increment score
 				}
 			}
 			break;
 		case GAME_INCORRECT:
 			ui_setDisplayRaw(noString);
 			if(get_timer() - timerStart > 2000) {
+				timerStart = get_timer();
+				state = GAME_INCORRECT_2;
+			}
+			break;
+		case GAME_INCORRECT_2:
+			ui_setDisplayDigits(playerScore, 10, 0x00);
+			if(get_timer() - timerStart > 1000) {
 				numFailures++;
 				if(numFailures >= MAX_FAILURES) {
 					timerStart = get_timer();
 					state = GAME_OVER_START;
 				} else {
 					state = GAME_ROUND_START;
-					// TODO show score
 				}
 			}
 			break;
 		case GAME_TIME_UP:
 			ui_setDisplayRaw(timeString);
 			if(get_timer() - timerStart > 2000) {
-				numFailures++;
-				if(numFailures >= MAX_FAILURES) {
-					timerStart = get_timer();
-					state = GAME_OVER_START;
-				} else {
-					state = GAME_ROUND_START;
-					// TODO show score
-				}
+				timerStart = get_timer();
+				state = GAME_INCORRECT_2;
 			}
 			break;
 		case GAME_OVER_START:
 			// Save new high score
 			if(playerScore > highScore) {
 				set_highscore(playerScore, base);
+				highScore = playerScore;
 			}
 			state = GAME_OVER;
 			break;
 		case GAME_OVER:
+			if((get_timer() - timerStart) == 0) {
+				tone_start(NOTE_F, 3, 400);
+			} else if((get_timer() - timerStart) == 500) {
+				tone_start(NOTE_E, 3, 400);
+			} else if((get_timer() - timerStart) == 1000) {
+				tone_start(NOTE_D, 3, 400);
+			} else if((get_timer() - timerStart) == 1500) {
+				tone_start(NOTE_C, 3, 400);
+			}
+
 			if(get_timer() - timerStart < 1000) {
 				ui_setDisplayRaw(gameString);
 			} else if(get_timer() - timerStart < 2000) {
@@ -223,7 +267,7 @@ uint8_t game_update(void) {
 			}
 			break;
 		case GAME_SHOW_SCORE:
-			ui_setDisplayDigits(playerScore, 10);
+			ui_setDisplayDigits(playerScore, 10, 0x00);
 
 			if(ui_readModeButton()) {
 				modeButtonArmed = 1;
