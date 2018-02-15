@@ -14,7 +14,7 @@ const __flash uint8_t timeString[]  = {0x45, 0x05, 0xC6, 0xF2};
 const __flash uint8_t goString[]    = {0x00, 0x77, 0xA6, 0xC3};
 
 #define MAX_FAILURES 3
-#define MAX_WINS 24
+#define MAX_WINS 255
 
 typedef enum gameBinaryState {
 	GAME_IDLE,
@@ -161,7 +161,7 @@ uint8_t game_update(void) {
 				break;
 			}
 
-			if(((get_timer() - timerStart) & 0xFC00) == 0) {
+			if(((get_timer() - timerStart) & 0x03FF) == 0) {
 				tone_start(NOTE_F, 2, 150);
 			}
 
